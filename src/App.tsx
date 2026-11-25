@@ -917,8 +917,11 @@ export default function App() {
     }
 
     initializePayment({
-      onSuccess: async () => {
-        await executeMockPayment();
+      onSuccess: () => {
+        // Paystack's webhook (api/webhooks/paystack.ts) verifies the payment and unlocks Pro;
+        // the onSnapshot listener updates the screen as soon as it lands.
+        toast.success("Payment received! Pro unlocks in a few seconds.");
+        setShowPremiumDialog(false);
       },
       onClose: () => {
         toast.error("Payment window closed.");
@@ -932,10 +935,11 @@ export default function App() {
       
       // Call our backend test endpoint instead of updating Firestore directly
       // because the Firestore rules are now hardened!
+      const idToken = await user!.getIdToken();
       const response = await fetch('/api/test-upgrade', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user!.uid })
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({})
       });
       
       if (!response.ok) throw new Error("Backend upgrade failed");
